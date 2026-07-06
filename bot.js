@@ -80,44 +80,6 @@ const gracefulShutdown = (signal) => {
   process.exit(0);
 };
 
-// ========== CHECK CHANNELS FUNCTION ==========
-const checkUserJoinedChannels = async (userId) => {
-  const channels = ['@@Syedabdulwahab', '@Syedabdulwahab'];
-  let allJoined = true;
-
-  for (const channel of channels) {
-    try {
-      const member = await bot.getChatMember(channel, userId);
-      if (['left', 'kicked'].includes(member.status)) {
-        allJoined = false;
-        break;
-      }
-    } catch {
-      allJoined = false;
-      break;
-    }
-  }
-  return allJoined;
-};
-
-// ========== SEND CHANNELS REQUIRED MESSAGE ==========
-const sendChannelsRequiredMessage = async (chatId) => {
-  return bot.sendMessage(chatId,
-    `🚨 *You must join our official channels before pairing.*`,
-    {
-      parse_mode: 'Markdown',
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: '📢 Channel 1', url: 'https://t.me/Syedabdulwahab' }],
-          [{ text: '📢 Channel 2', url: 'https://t.me/Syedabdulwahab' }],
-          [{ text: '👥 Group', url: 'https://t.me/Syedabdulwahab' }],
-          [{ text: '✅ I have joined', callback_data: 'check_join' }]
-        ]
-      }
-    }
-  );
-};
-
 // ========== SEND GROUP MESSAGE (STYLISH) ==========
 const sendGroupMessage = async (chatId, replyToMessageId = null) => {
   const botInfo = await bot.getMe();
@@ -178,13 +140,6 @@ bot.onText(/\/pair(?:\s+(.+))?/, async (msg, match) => {
   // 🔥 GROUP MEIN /pair LIKHA TO SAME STYLISH MESSAGE (JAISE START MEIN HAI)
   if (isGroup) {
     return sendGroupMessage(chatId, msg.message_id);
-  }
-
-  // 🔥 PRIVATE CHAT MEIN NORMAL PAIRING PROCESS
-  const allJoined = await checkUserJoinedChannels(userId);
-  
-  if (!allJoined) {
-    return sendChannelsRequiredMessage(chatId);
   }
 
   if (!text) {
@@ -280,24 +235,6 @@ bot.on('callback_query', async (callbackQuery) => {
     });
     return;
   }
-
-  if (data === 'check_join') {
-    const allJoined = await checkUserJoinedChannels(userId);
-
-    if (allJoined) {
-      await bot.answerCallbackQuery(callbackQuery.id, { 
-        text: '✅ Thanks for joining! Now use /pair command.', 
-        show_alert: true
-      });
-      await bot.sendMessage(chatId, '✅ *Thanks for joining all channels!*\n\nNow send /pair to start pairing.', { parse_mode: 'Markdown' });
-    } else {
-      await bot.answerCallbackQuery(callbackQuery.id, { 
-        text: '❌ Please join all channels first!', 
-        show_alert: true
-      });
-    }
-    return;
-  }
 });
 
 // ========== TEXT MESSAGE HANDLER ==========
@@ -318,25 +255,6 @@ bot.on('message', async (msg) => {
   
   userStates.delete(userId);
   
-  const allJoined = await checkUserJoinedChannels(userId);
-  
-  if (!allJoined) {
-    return bot.sendMessage(chatId,
-      `🚨 *You must join our official channels before pairing.*`,
-      {
-        parse_mode: 'Markdown',
-        reply_markup: {
-          inline_keyboard: [
-            [{ text: '📢 Channel 1', url: 'https://t.me/shadowofficial786' }],
-            [{ text: '📢 Channel 2', url: 'https://t.me/shadowbanproof' }],
-            [{ text: '👥 Group', url: 'https://t.me/skchatzone' }],
-            [{ text: '✅ I have joined', callback_data: 'check_join' }]
-          ]
-        }
-      }
-    );
-  }
-
   if (/[a-z]/i.test(text)) {
     return bot.sendMessage(chatId, '❌ Letters are not allowed. Send only numbers.');
   }
@@ -455,22 +373,6 @@ bot.on('polling_error', (error) => {
   const restartCount = parseInt(process.env.RESTART_COUNT || 0);
   console.log(`RESTART #${restartCount + 1}`);
   process.env.RESTART_COUNT = String(restartCount + 1);
-
-  console.log('🤖 Telegram Bot is running...');
-  console.log('✅ Bot Username: @bot_hosting_v1_bot');
-  console.log('✅ Features: /pair, /unpair, /start');
+  
+  console.log('🚀 Bot is starting...');
 })();
-
-// ========== PROCESS HANDLERS ==========
-process.on("uncaughtException", (err) => {
-  console.error('Uncaught Exception:', err);
-});
-process.on("unhandledRejection", (err) => {
-  console.error('Unhandled Rejection:', err);
-});
-process.removeAllListeners("warning");
-process.once('SIGINT', () => gracefulShutdown('SIGINT'));
-process.once('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('message', (msg) => {
-  if (msg === 'shutdown') gracefulShutdown('PM2_SHUTDOWN');
-});
